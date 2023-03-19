@@ -1,28 +1,29 @@
 //
-//  AddEventViewModel.swift
+//  EditEventViewModel.swift
 //  EventsApp
 //
-//  Created by Айсен Еремеев on 17.02.2023.
+//  Created by Айсен Еремеев on 17.03.2023.
 //
 
 import UIKit
 
-final class AddEventViewModel {
+final class EditEventViewModel {
     
-    let title = "Add"
+    let title = "Edit"
     var onUpdate: () -> Void = {}
     
     enum Cell {
         case titleSubtitle(TitleSubtitleCellViewModel)
     }
-    private(set) var cells: [AddEventViewModel.Cell] = []
-    weak var coordinator: AddEventCoordinator?
+    private(set) var cells: [EditEventViewModel.Cell] = []
+    weak var coordinator: EditEventCoordinator?
     
     private var nameCellViewModel: TitleSubtitleCellViewModel?
     private var dateCellViewModel: TitleSubtitleCellViewModel?
     private var backgroundImageCellViewModel: TitleSubtitleCellViewModel?
     private let cellBuilder: EventsCellBuilder
     private let eventService: EventServiceProtocol
+    private let event: Event
     
     lazy var dateFormatter: DateFormatter = {
        let dateFormatter = DateFormatter()
@@ -30,7 +31,12 @@ final class AddEventViewModel {
         return dateFormatter
     }()
     
-    init(cellBuilder: EventsCellBuilder, eventService: EventServiceProtocol = EventService()) {
+    init(
+        event: Event,
+        cellBuilder: EventsCellBuilder,
+        eventService: EventServiceProtocol = EventService()
+    ) {
+        self.event = event
         self.cellBuilder = cellBuilder
         self.eventService = eventService
     }
@@ -60,14 +66,14 @@ final class AddEventViewModel {
             let date = dateFormatter.date(from: dateString) else { return }
         
         eventService.perform(
-            .add,
+            .update(event),
             data: EventService.EventInputData(
                 name: name,
                 date: date,
                 image: image
             )
         )
-        coordinator?.didFinishSaveEvent()
+        coordinator?.didFinishUpdateEvent()
     }
     
     func updateCell(indexPath: IndexPath, subtitle: String) {
@@ -90,7 +96,7 @@ final class AddEventViewModel {
     }
 }
 
-private extension AddEventViewModel {
+private extension EditEventViewModel {
     func setupCells() {
         nameCellViewModel = cellBuilder.makeTitleSubtitleCellViewModel(.text)
         dateCellViewModel = cellBuilder.makeTitleSubtitleCellViewModel(.date) { [weak self] in
@@ -113,6 +119,14 @@ private extension AddEventViewModel {
                 backgroundImageCellViewModel
                 )
         ]
+        guard let name = event.name,
+            let date = event.date,
+            let imageData = event.image,
+            let image = UIImage(data: imageData)
+            else { return }
+        nameCellViewModel.update(name)
+        dateCellViewModel.update(date)
+        backgroundImageCellViewModel.update(image)
     }
 }
 
